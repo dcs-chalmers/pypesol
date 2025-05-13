@@ -1,4 +1,3 @@
-
 import numpy as np
 import time
 
@@ -15,8 +14,6 @@ from os.path import join, exists
 from utils import *
 from optimizer import *
 
-def naive_assignment(P, C):
-    pass
 
 """
     Matching version E-energy2020 / Applied Energy:
@@ -99,6 +96,23 @@ def average_gain(matching):
     Matching in hypergraphs.
         (ie. one-to-many assignment problem)
 """
+
+def naive_matching(opt, k=2, neighbors=None):
+    prosumers = opt.get_prosumers()
+    
+    if not neighbors:   # if no neighborhood function is provided, all prosumer-consumer pairs are allowed
+        neighbors = lambda p: opt.get_consumers()
+        
+    matching = defaultdict(list)
+    is_matched = defaultdict(bool)
+    
+    for p in prosumers:
+        N = [c for c in neighbors(p) if opt.pv[c] == 0 and not is_matched[c]]
+        matching[p] = N[:k]
+        for c in matching[p]:
+            is_matched[c] = True
+
+    return matching
 
 def random_matching(opt, k=2, neighbors=None):
     prosumers = opt.get_prosumers()
