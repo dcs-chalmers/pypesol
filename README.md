@@ -59,27 +59,6 @@ sudo apt-get install coinor-cbc
 brew install cbc
 ```
 
-4. For redis, make following installation (if installed in step 2, simply skip): 
-
-### MacOS
-
-```
-brew install redis
-```
-
-Python package to install before running the code: 
-
-```
-pip install redis
-```
-
-
-5. Test the install (1 single problem solving):
-
-```
-run_experiments.sh 1 1 1
-```
-
 
 ## Input -- Datasets ###
 
