@@ -94,7 +94,7 @@ def average_gain(matching):
 
 """
     Matching in hypergraphs.
-        (ie. one-to-many assignment problem)
+        (ie. one-to-many assignment problems, cf. Duvignau et al., IEEE Access 2024)
 """
 
 def naive_matching(opt, k=2, neighbors=None):
@@ -129,6 +129,35 @@ def random_matching(opt, k=2, neighbors=None):
 
     return matching
 
+def singlepass_matching(opt, k, weights, neighbors=None):
+    prosumers = opt.get_prosumers()
+    if not neighbors:   # if no neighborhood function is provided, all prosumer-consumer pairs are allowed
+        neighbors = lambda p: opt.get_consumers()
+    matching = defaultdict(list)
+    is_matched = defaultdict(bool)
+    
+    for p in prosumers:
+        N = [c for c in neighbors(p) if opt.pv[c] == 0 and not is_matched[c]]
+        
+        if len(N) > k-1:
+            while len(matching[p]) < k-1:
+                cj = None
+                for c in N:
+                    if not is_matched[c]:
+                        if not cj or weights[(p,c)] > weights[(p,cj)]:
+                            cj = c
+                            
+                is_matched[cj] = True
+                matching[p].append(cj)
+
+        else:
+            matching[p] = N
+            
+        for c in matching[p]:
+            is_matched[c] = True
+
+    return matching
+
 def optimal_pairwise_matching(opt, k, weights):
     prosumers = opt.get_prosumers()
     consumers = opt.get_consumers()
@@ -150,9 +179,21 @@ def optimal_pairwise_matching(opt, k, weights):
     
     return matching
 
+def cost_saving_weight(opt, p, c):
+    return (opt.optimize(p)+opt.optimize(c))-opt.optimize_community((p,c))
+
 def calculate_all_pairwise_weights(opt):
     weights = {}
     for p in opt.get_prosumers():
         for c in opt.get_consumers():
-            weights[(p,c)] = (opt.optimize(p)+opt.optimize(c))-opt.optimize_community((p,c))
+            weights[(p,c)] = cost_saving_weight(opt, p, c)
     return weights
+
+
+def memoized_weights(opt):
+    class weights_dict(dict):
+        def __missing__(self, key):
+            p,c = key
+            self[(p,c)] = cost_saving_weight(opt,p,c)
+            return self[(p,c)]
+    return weights_dict()
