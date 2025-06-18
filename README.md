@@ -11,14 +11,16 @@ The software is shared under MIT license.
 ## Re-use & cite ###
 
 If this software is used in research work, please cite the following publication:
-- *Duvignau, Romaric, Vincenzo Gulisano, and Marina Papatriantafilou. "PyPESOL: The Python P2P Energy Sharing Optimization Library." Proceedings of the Sixteenth ACM International Conference on Future Energy Systems (ACM e-energy '25). 2025.*
+- *Duvignau, Romaric, Vincenzo Gulisano, and Marina Papatriantafilou. "PyPESOL: The Python P2P Energy Sharing Optimization Library." Proceedings of the Sixteenth ACM International Conference on Future Energy Systems (ACM e-energy '25). 2025. 1014-1015.* https://dl.acm.org/doi/10.1145/3679240.3734691
 
 
 The library implements energy and optimization models as well as matching methods from the following publications:
-- Duvignau, R., & Klasing, R. (2023). Greediness is not always a vice: Efficient Discovery Algorithms for Assignment Problems. Procedia Computer Science, 223, 43-52.
 - Duvignau, R., Gulisano, V., Papatriantafilou, M., & Klasing, R. (2024). Geographical Peer Matching for P2P Energy Sharing. IEEE Access.
+- Duvignau, R., & Klasing, R. (2023). Greediness is not always a vice: Efficient Discovery Algorithms for Assignment Problems. Procedia Computer Science, 223, 43-52.
 - Duvignau, R., Gulisano, V., & Papatriantafilou, M. (2023, January). Cost-optimization for win-win P2P energy systems. In 2023 IEEE Power & Energy Society Innovative Smart Grid Technologies Conference (ISGT) (pp. 1-5). IEEE.
+- Duvignau, R., Gulisano, V., & Papatriantafilou, M. (2022, April). Efficient and scalable geographical peer matching for p2p energy sharing communities. In Proceedings of the 37th ACM/SIGAPP Symposium on Applied Computing (pp. 187-190).
 - Duvignau, R., Heinisch, V., Göransson, L., Gulisano, V., & Papatriantafilou, M. (2021). Benefits of small-size communities for continuous cost-optimization in peer-to-peer energy sharing. Applied Energy, 301, 117402.
+- Duvignau, R., Heinisch, V., Göransson, L., Gulisano, V., & Papatriantafilou, M. (2020, June). Small-scale communities are sufficient for cost-and data-efficient peer-to-peer energy sharing. In Proceedings of the Eleventh ACM International Conference on Future Energy Systems (pp. 35-46).
 
 
 ## For a New Fresh Install ###
