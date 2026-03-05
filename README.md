@@ -1,10 +1,19 @@
-# README #
+# PyPESOL -- README
 
-First public release README file (v0.2, May 2025).
+### Python Peer-to-Peer Energy Sharing Optimization Library
 
-Here is a small guide to start experimenting with the **Python Peer-to-Peer Energy Sharing Optimization Library** (PyPESOL).
+First public release README file (v0.2, May 2025) -- last update March 2026.
 
-The software is shared under MIT license.
+PyPESOL is an optimization framework for modeling and solving **peer-to-peer energy sharing problems** using mathematical programming techniques.
+
+The library is built on:
+
+* **Pyomo** for mathematical modeling
+* **GLPK** and **CBC** for linear and mixed-integer optimization
+* Scientific Python stack (NumPy, SciPy, Pandas)
+* Optional forecasting support via **Prophet**
+
+Here is a small guide to start experimenting with PyPESOL.
 
 > **Disclaimer** The code is highly experimental and has only been tested on Ubuntu and MacOS. *Use with care!*
 
@@ -22,77 +31,198 @@ The library implements energy and optimization models as well as matching method
 - Duvignau, R., Heinisch, V., Göransson, L., Gulisano, V., & Papatriantafilou, M. (2021). Benefits of small-size communities for continuous cost-optimization in peer-to-peer energy sharing. Applied Energy, 301, 117402.
 - Duvignau, R., Heinisch, V., Göransson, L., Gulisano, V., & Papatriantafilou, M. (2020, June). Small-scale communities are sufficient for cost-and data-efficient peer-to-peer energy sharing. In Proceedings of the Eleventh ACM International Conference on Future Energy Systems (pp. 35-46).
 
+---
 
-## For a New Fresh Install ###
+# Installation
 
-1. Clone the source code.
+PyPESOL can be installed in two ways:
 
-2. Packages to install before running the code: (required) pyomo, (optional for some sub-components) numpy, scipy, pandas, prophet (**as of prophet v1.1, requires Python3.7**), plotly eg using the current Python3.7 installation:
+* **Option 1: Python virtual environment (recommended for development)**
+* **Option 2: Docker (recommended for easy deployment)**
+
+---
+
+# Option 1 — Installation via Python Virtual Environment
+
+### 1. Install required system solvers
+
+#### Ubuntu
+
+```bash
+sudo apt install glpk-utils coinor-cbc
+```
+
+#### MacOS
+
+```
+brew install cbc glpk
+```
+
+These provide:
+
+* `glpsol` (GLPK solver)
+* `cbc` (COIN-OR Branch and Cut solver)
+
+### 2. Create and activate a virtual environment
+
+Clone the source code in the directory of your choice and set-up a virtual enviornment for **pypesol**, Python 3.10+ (3.12 recommended).
+
+Example command-lines:
+
+```bash
+git clone https://github.com/dcs-chalmers/pypesol.git
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+```
+
+### 3. Install Python dependencies
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+### 4. Verify solver availability
+
+```bash
+python -c "import pyomo.environ as pyo; \
+print('GLPK:', pyo.SolverFactory('glpk').available()); \
+print('CBC:', pyo.SolverFactory('cbc').available())"
+```
+
+Both should return `True`.
+
+### 5. Quick test
+
+Activate your project venv (from project root):
+
+```
+source .venv/bin/activate
+```
+
+Then, run a lightweight Python test which loads the default optimizer and executes it over some small test data:
 
 
 ```
-pip3 install numpy scipy pyomo pandas plotly prophet
+python3 -c "from optimizer import Optimizer as Opt; print(Opt.from_folder2('data_test').optimize(0))"
 ```
 
-or complete install via conda and a virtual environment for *Python 3.7*, including two optimization solvers:
+The result should be *-1.06021*, i.e., the optimized electricity cost (with optimal battery level decisions) for user *0* over the time period of the test data.
 
-```
-conda update anaconda
-conda create -n py37 python=3.7
-conda activate py37
-conda install numpy scipy pandas plotly prophet redis
-conda install -c conda-forge pyomo
-conda install -c conda-forge ipopt glpk
+**Run the tutorial notebook**: From the same activated venv, open the Getting Started notebook:
+
+```bash
+jupyter notebook getting_started.ipynb
 ```
 
+Then, you can follow the **[Jupyter Notebook tutorial](getting_started.ipynb)** -- more info at the end of this readme.
 
-3. Install a LP solver program. The default one that is configured in the code is 'cbc' solver. 
+---
 
+# Option 2 — Installation via Docker
 
-### Ubuntu
+Docker provides a fully reproducible environment including:
+
+* Python 3.12
+* All required Python dependencies including the jupyter notebook
+* GLPK
+* CBC
+
+### 1. Install Docker (Ubuntu), if needed
+
+```bash
+sudo apt install docker.io
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+### 2. Pull the Docker image
+
+```bash
+docker pull duvignau/pypesol:py312
+```
+
+### 3. Run PyPESOL interactively
+
+```bash
+docker run --rm -it \
+  -v "$PWD:/app" \
+  -w /app \
+  duvignau/pypesol:py312
+```
+
+### 4. Run Jupyter Notebook inside Docker
+
+```bash
+docker run --rm -it \
+  -p 8888:8888 \
+  -v "$PWD:/app" \
+  -w /app \
+  duvignau/pypesol:py312 \
+  jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+```
+
+Open in browser:
 
 ```
-sudo apt-get install coinor-cbc
+http://localhost:8888
 ```
 
-### MacOS
+---
 
-```
-brew install cbc
-```
+# License
 
-## Getting started
+The software is shared under MIT license.
 
-Follow the [jupyter notebook tutorial](getting_started.ipynb)
+---
 
-## Input -- Datasets ###
+# Getting Started
 
-Inspect the following files:
+A step-by-step introduction to PyPESOL is provided in the
+**[Jupyter Notebook tutorial](getting_started.ipynb)**.
 
-* **cons.csv**
+The tutorial explains the required input data structure and walks through a complete optimization example.
 
-Household consumptions, each line is 1 hour of consumption.
+## Required Input Data
 
-That is: h1, h2, ..., hn consumption for hour1, then a newline and
-the same for hour3 and so on.
+Running a PyPESOL optimization requires five input CSV files.
+Assume:
 
-The size is then N*365*24 numbers, N values per line, where N is number of households.
-(default unit kWh)
+- **N** = number of end-users
+- **T** = number of time steps
 
-* **price.csv**
+The expected input files are:
 
-Yearly hourly price, so 365*24 numbers, 1 value per line.
-(default unit €/kWh)
+1. **`cons.csv`** — End-user electricity consumption
+   - Dimension: **T × N**
+   - Unit: *kWh* (default)
+   - Each row corresponds to one time step.
+   - Each column corresponds to one end-user.
 
-* **sun.csv**
+2. **`price.csv`** — Electricity price time series
+   - Dimension: **T × 1**
+   - Unit: *€/kWh* (default)
+   - Each row provides the electricity price for the corresponding time step.
 
-Solar profile, so 365*24 numbers, 1 value per line.
-(default unit kWh/kWp)
+3. **`sun.csv`** — Solar production profile
+   - Dimension: **T × 1**
+   - Unit: *kWh/kWp* (default)
+   - Each row represents solar intensity for the corresponding time step.
 
-* **pv.csv**
+4. **`pv.csv`** — Installed PV capacities
+   - Dimension: **N × 1**
+   - Unit: *kWp* (default)
+   - Each row specifies the PV system capacity of one end-user.
 
-File with PV capacities.
+5. **`battery.csv`** — Installed battery capacities
+   - Dimension: **N × 1**
+   - Unit: *kWh* (default)
+   - Each row specifies the battery storage capacity of one end-user.
 
-* **battery.csv**
+### Notes
 
-File with battery capacities.
+- All files must be provided in CSV format.
+- Time indexing must be consistent across all T-dimensional files (`cons.csv`, `price.csv`, `sun.csv`).
+- The ordering of users must be consistent across all N-dimensional files (`cons.csv`, `pv.csv`, `battery.csv`).
+
+For a complete example dataset and usage workflow, refer to the **Getting Started notebook**.
