@@ -158,6 +158,91 @@ def singlepass_matching(opt, k, weights, neighbors=None):
 
     return matching
 
+#round-robin algorithm (WB, Decreasing)
+
+def round_robin_matching(opt, k, weights, neighbors=None):
+    prosumers = opt.get_prosumers()
+    
+    if not neighbors:
+        neighbors = lambda p: opt.get_consumers()
+
+    #  Decreasing order of prosumers (by load) 
+    prosumers_sorted = sorted(prosumers, key=lambda p: opt.loads[p], reverse=True)
+
+    matching = defaultdict(list)
+    is_matched = defaultdict(bool)
+
+    # Active prosumers (those who can still receive consumers)
+    active = set(prosumers_sorted)
+
+    while active:
+        new_active = set()
+
+        for p in prosumers_sorted:
+            if p not in active:
+                continue
+
+            # Stop if already has k-1 consumers
+            if len(matching[p]) >= (k - 1):
+                continue
+
+            # Available neighbors
+            N = [c for c in neighbors(p)
+                 if opt.pv[c] == 0 and not is_matched[c]]
+
+            if not N:
+                continue
+
+            #  Greedy choice using WB weights 
+            best_c = None
+            for c in N:
+                if not best_c or weights[(p,c)] > weights[(p,best_c)]:
+                    best_c = c
+
+            # Assign consumer
+            matching[p].append(best_c)
+            is_matched[best_c] = True
+
+            if len(matching[p]) < (k - 1):
+                new_active.add(p)
+
+        active = new_active
+
+    return matching
+
+
+#Classic Greedy Algorithm
+def classic_greedy_matching(opt, k, weights, neighbors=None):
+    
+    prosumers = opt.get_prosumers()
+    if not neighbors:
+        neighbors = lambda p: opt.get_consumers()
+        
+    
+    is_matched = defaultdict(bool)
+    
+    # Track how many consumers each prosumer has
+    matching = defaultdict(list)
+    
+    # Build list of all allowed (p,c) pairs
+    allowed_pairs = []
+    for p in prosumers:
+        for c in neighbors(p):
+            if opt.pv[c] == 0 and (p,c) in weights:
+                allowed_pairs.append((p, c, weights[(p,c)]))
+    
+    # Sort pairs descending by weight
+    allowed_pairs.sort(key=lambda x: x[2], reverse=True)
+    
+    # Assign greedily
+    for p, c, w in allowed_pairs:
+        if not is_matched[c] and len(matching[p]) < k-1:
+            matching[p].append(c)
+            is_matched[c] = True
+    
+    return matching
+
+
 def optimal_pairwise_matching(opt, k, weights):
     prosumers = opt.get_prosumers()
     consumers = opt.get_consumers()
