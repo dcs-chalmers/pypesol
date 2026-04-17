@@ -161,55 +161,44 @@ def singlepass_matching(opt, k, weights, neighbors=None):
 #round-robin algorithm (WB, Decreasing)
 
 def round_robin_matching(opt, k, weights, neighbors=None):
-    prosumers = opt.get_prosumers()
-    
-    if not neighbors:
-        neighbors = lambda p: opt.get_consumers()
 
-    #  Decreasing order of prosumers (by load) 
-    prosumers_sorted = sorted(prosumers, key=lambda p: opt.loads[p], reverse=True)
+    from collections import defaultdict
+    import numpy as np
+
+    prosumers = sorted(
+        opt.get_prosumers(),
+        key=lambda p: np.sum(opt.cons[p]),
+        reverse=True
+    )
+
+    if neighbors is None:
+        neighbors = lambda p: opt.get_consumers()
 
     matching = defaultdict(list)
     is_matched = defaultdict(bool)
 
-    # Active prosumers (those who can still receive consumers)
-    active = set(prosumers_sorted)
+    # Round-robin: each round assigns at most 1 consumer per prosumer
+    for _ in range(k - 1):
 
-    while active:
-        new_active = set()
+        for p in prosumers:
 
-        for p in prosumers_sorted:
-            if p not in active:
-                continue
-
-            # Stop if already has k-1 consumers
             if len(matching[p]) >= (k - 1):
                 continue
 
-            # Available neighbors
-            N = [c for c in neighbors(p)
-                 if opt.pv[c] == 0 and not is_matched[c]]
+            N = [
+                c for c in neighbors(p)
+                if opt.pv[c] == 0 and not is_matched[c]
+            ]
 
             if not N:
                 continue
 
-            #  Greedy choice using WB weights 
-            best_c = None
-            for c in N:
-                if not best_c or weights[(p,c)] > weights[(p,best_c)]:
-                    best_c = c
+            best_c = max(N, key=lambda c: weights[(p, c)])
 
-            # Assign consumer
             matching[p].append(best_c)
             is_matched[best_c] = True
 
-            if len(matching[p]) < (k - 1):
-                new_active.add(p)
-
-        active = new_active
-
     return matching
-
 
 #Classic Greedy Algorithm
 def classic_greedy_matching(opt, k, weights, neighbors=None):

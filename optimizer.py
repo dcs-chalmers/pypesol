@@ -45,11 +45,12 @@ class Optimizer():
                  predictor=truth_predictor, # remove from the optimizer main-class
                  solver=Solver,
                  solverex_name=DEFAULT_LP_SOLVER,
-                 single_sun=True):
-
-        self.pv = load(pv_file)
-        self.battery = load(battery_file)
-        self.cons = loadcsv(cons_file)
+                 single_sun=True
+                 ):
+         #converts data into numpy arrays, makes faster execution
+        self.pv = np.array(load(pv_file))
+        self.battery = np.array(load(battery_file))
+        self.cons = np.array(loadcsv(cons_file))
         
         if single_sun:
             sun_profile = load(sun_file)
@@ -57,7 +58,7 @@ class Optimizer():
         else:
             self.sun = loadcsv(sun_file)
 
-        self.price = load(price_file)
+        self.price = np.array(load(price_file))
 
         # [extension] this should also be loaded. params.csv
         self.tax = tax
@@ -68,6 +69,8 @@ class Optimizer():
         self.predictor = predictor
         self.solver_class = solver
         self.last_solver = None
+        self.el_in = [None] * len(self.cons)
+        self.el_out = [None] * len(self.cons)
 
     ### utils ###
 
@@ -195,7 +198,8 @@ class Optimizer():
     def aggregate_all(self):
         self.sun = [self.sun[0]]
         self.pv = [sum(self.pv)]
-        self.battery = [sum(self.battery)]
+        self.battery = [sum(self.battery)]   
+        
         self.cons = [[sum(house[t] for house in self.cons) for t in range(len(self.price))]]
         return self
 
@@ -279,18 +283,38 @@ class Optimizer():
         Returns:
             int: cost of user h over billing period ignoring any resources.
         """
-        self.el_in[h] = [0]*len(self.price)
-        self.el_out[h] = [0]*len(self.price)
-        return sum(self.cost(t,self.cons[h][t],0) for t in range(len(self.price)))
+        
+        #self.el_in[h] = [0]*len(self.price)
+        #self.el_out[h] = [0]*len(self.price)
+        #return sum(self.cost(t,self.cons[h][t],0) for t in range(len(self.price)))
+        
+        #vectorized cost-computation
+        self.el_in[h] = np.zeros(len(self.price))
+        self.el_out[h] = np.zeros(len(self.price))
+        rate = self.price * self.tax + self.el_tax
+        return np.dot(self.cons[h], rate)     
 
+            
     def bill_nobat(self, h=None):
         if h is not None:
             self.el = [round(self.cons[h][t]-self.sun[h][t]*self.pv[h],5)
                        for t in range(len(self.price))]
-            self.el_in = [(self.el[t] if self.el[t]>0 else 0) for t in range(len(self.price))]
-            self.el_out = [(-self.el[t] if self.el[t]<0 else 0) for t in range(len(self.price))]
-            return sum(self.cost_nobat(h, t) for t in range(len(self.price)))
-        return sum(self.bill_nobat(h) for h in range(len(self.cons)))
+    def bill_nobat(self, h=None):
+        if h is not None:
+            #self.el = [round(self.cons[h][t]-self.sun[h][t]*self.pv[h],5)
+             #          for t in range(len(self.price))]
+            #self.el_in = [(self.el[t] if self.el[t]>0 else 0) for t in range(len(self.price))]
+            #self.el_out = [(-self.el[t] if self.el[t]<0 else 0) for t in range(len(self.price))]
+            #return sum(self.cost_nobat(h, t) for t in range(len(self.price)))
+            #return sum(self.bill_nobat(h) for h in range(len(self.cons)))
+
+            #vectorize bill_nobat
+            el = self.cons[h] - self.sun[h] * self.pv[h]
+            self.el_in = np.clip(el, 0, None)
+            self.el_out = np.clip(-el, 0, None)
+
+            return np.sum(self.el_in * (self.price*self.tax + self.el_tax)
+              - self.el_out * (self.price + self.el_net))
 
     def greedy_cost(self, h=0):
         cost = battery = 0
@@ -299,19 +323,18 @@ class Optimizer():
         
         for t in range(len(self.price)):
             production = self.sun[h][t]*self.pv[h]
-            consumption = self.cons[h][t]
-
-            if production >= consumption :      # charge battery
+            consumption = self.cons[h][t]       
+        if production >= consumption :      # charge battery
                 battery += production - consumption
                 if battery > max_battery:
                     cost -= (battery-max_battery)*(self.price[t] + self.el_net)
                     battery = max_battery
-            else:                               # discharge battery
+        else:                               # discharge battery
                 battery -= consumption - production
                 if battery < 0:
                     cost += (-battery) * (self.price[t]*self.tax + self.el_tax)
                     battery = 0
-            self.bat.append(battery)
+        self.bat.append(battery)
 
         return cost
 
@@ -384,17 +407,20 @@ class Optimizer():
 
     def recompute_bill(self): # recompute cost post-optimization
         return self.original_bill(self.el_in, self.el_out)
-
+    
+       
     def individual_savings(self): # post optimization savings, after agregation
-        for t in range(len(self.price)):
-            if t == 0:
-                pool_bat = opt0.bat[0]
-            else:
-                pool_bat = opt0.bat[t]-opt0.bat[t-1]
-            pool_sun = self.sun[0][t]*self.pv[0]
-            pool_grid = self.el_in[t]
+        #for t in range(len(self.price)): 
+        #avoided repeated range
+        T = self.price.shape[0]
+        for t in range(T):           
+          if t == 0:
+                pool_bat = self.bat[0]
+          else:
+                pool_bat = self.bat[t] - self.bat[t-1]
+                pool_sun = self.sun[0][t]*self.pv[0]
+                pool_grid = self.el_in[t]
                 
-        
 
     ### static functions -- shorthand to build / save / load an Optimizer
     
@@ -570,9 +596,17 @@ class OptimizerExt(Optimizer):
         return self.new_cost(self.price[h][t], el if el > 0 else 0, -el if el < 0 else 0)
 
     def bill_nopvbat(self, h):
-        self.el_in[h] = [0]*len(self.price[h])
-        self.el_out[h] = [0]*len(self.price[h])
-        return sum(self.cost(t,self.cons[h][t],0) for t in range(len(self.cons[0])))
+        #self.el_in[h] = [0]*len(self.price[h])
+        #self.el_out[h] = [0]*len(self.price[h])
+        #return sum(self.cost(t,self.cons[h][t],0) for t in range(len(self.cons[0])))
+        
+        #vectorization
+        cons = np.array(self.cons[h])
+        price = np.array(self.price[h])
+        self.el_in[h] = np.zeros(len(price))
+        self.el_out[h] = np.zeros(len(price))
+        return self._bill_core(cons, price)
+    
 
     def bill_nobat(self, h=None):
         if h is not None:
