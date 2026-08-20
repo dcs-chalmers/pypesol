@@ -1,5 +1,4 @@
 from solver import *
-from predictor import *
 
 from utils import *
 from constants import *
@@ -16,6 +15,19 @@ hours_to_months = lambda hours: sum(i-1 + (hours-HOURMONTHS[i-1])/(HOURMONTHS[i]
 
 import numpy as np
 import pandas
+
+### Default Stub Predictor
+
+"""
+predictor(table,t,i0,imax)
+            function for predicting t-th entry in the table,
+            i0 being the prediction being made and imax maximum for t
+"""
+
+def truth_predictor(table, t, i0=None, imax=None):
+    return table[t]
+
+### 
 
 class Optimizer():
     """
@@ -301,20 +313,20 @@ class Optimizer():
                        for t in range(len(self.price))]
     def bill_nobat(self, h=None):
         if h is not None:
-            #self.el = [round(self.cons[h][t]-self.sun[h][t]*self.pv[h],5)
-             #          for t in range(len(self.price))]
-            #self.el_in = [(self.el[t] if self.el[t]>0 else 0) for t in range(len(self.price))]
-            #self.el_out = [(-self.el[t] if self.el[t]<0 else 0) for t in range(len(self.price))]
-            #return sum(self.cost_nobat(h, t) for t in range(len(self.price)))
-            #return sum(self.bill_nobat(h) for h in range(len(self.cons)))
+            self.el = [round(self.cons[h][t]-self.sun[h][t]*self.pv[h],5)
+                       for t in range(len(self.price))]
+            self.el_in = [(self.el[t] if self.el[t]>0 else 0) for t in range(len(self.price))]
+            self.el_out = [(-self.el[t] if self.el[t]<0 else 0) for t in range(len(self.price))]
+            return sum(self.cost_nobat(h, t) for t in range(len(self.price)))
+        return sum(self.bill_nobat(h) for h in range(len(self.cons)))
 
             #vectorize bill_nobat
-            el = self.cons[h] - self.sun[h] * self.pv[h]
-            self.el_in = np.clip(el, 0, None)
-            self.el_out = np.clip(-el, 0, None)
-
-            return np.sum(self.el_in * (self.price*self.tax + self.el_tax)
-              - self.el_out * (self.price + self.el_net))
+##            el = self.cons[h] - self.sun[h] * self.pv[h]
+##            self.el_in = np.clip(el, 0, None)
+##            self.el_out = np.clip(-el, 0, None)
+##
+##            return np.sum(self.el_in * (self.price*self.tax + self.el_tax)
+##              - self.el_out * (self.price + self.el_net))
 
     def greedy_cost(self, h=0):
         cost = battery = 0

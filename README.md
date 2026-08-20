@@ -128,13 +128,34 @@ Docker provides a fully reproducible environment including:
 * GLPK
 * CBC
 
-### 1. Install Docker (Ubuntu), if needed
+### 1. Install Docker, if needed
+
+#### Ubuntu
 
 ```bash
 sudo apt install docker.io
 sudo usermod -aG docker $USER
 newgrp docker
-```
+````
+
+#### macOS
+
+Install Docker Desktop for Mac:
+
+[https://docs.docker.com/desktop/setup/install/mac-install/](https://docs.docker.com/desktop/setup/install/mac-install/)
+
+After installation, start Docker Desktop.
+
+#### Windows
+
+We recommend using Docker Desktop with the WSL 2 backend:
+
+[https://docs.docker.com/desktop/setup/install/windows-install/](https://docs.docker.com/desktop/setup/install/windows-install/)
+
+During installation, enable **WSL 2** when prompted.
+
+Then open a WSL terminal (for example Ubuntu) and run the commands below
+from there.
 
 ### 2. Pull the Docker image
 
@@ -143,6 +164,8 @@ docker pull duvignau/pypesol:py312
 ```
 
 ### 3. Run PyPESOL interactively
+
+From the directory containing the exercise files:
 
 ```bash
 docker run --rm -it \
