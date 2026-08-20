@@ -163,6 +163,10 @@ from there.
 docker pull duvignau/pypesol:py312
 ```
 
+Alternatively, manually download the container from dockerhub:
+
+[https://hub.docker.com/r/duvignau/pypesol](https://hub.docker.com/r/duvignau/pypesol)
+
 ### 3. Run PyPESOL interactively
 
 From the directory containing the exercise files:
