@@ -189,11 +189,7 @@ docker run --rm -it \
   jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root
 ```
 
-Open in browser:
-
-```
-http://localhost:8888
-```
+Open in a browser the link displayed after running the above command (containing the required token).
 
 ---
 
