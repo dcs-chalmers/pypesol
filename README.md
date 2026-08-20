@@ -208,7 +208,13 @@ The software is shared under MIT license.
 A step-by-step introduction to PyPESOL is provided in the
 **[Jupyter Notebook tutorial](getting_started.ipynb)**.
 
-The tutorial explains the required input data structure and walks through a complete optimization example.
+The above tutorial explains the required input data structure and walks through a complete optimization example.
+
+After completed the tutorial, you can use the following exercises to familiarize yourself with the libary:
+**[Exercises of the SESBC Summer School 2026](sesbc_exercises.ipynb)**.
+
+The above exercises were developped for the **Swedish Electricity Storage and Balancing Centre (SESBC)** [Summer School](https://www.sesbc.se/news-events/sesbc-summer-school-2026/).
+
 
 ## Required Input Data
 
